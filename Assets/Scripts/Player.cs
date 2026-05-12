@@ -11,6 +11,8 @@ public class Player : MonoBehaviour
     [SerializeField ]private float MoveSpeed=3f;
     [SerializeField] private float JumpForce=5f;
     private float MoveInputX;
+    private bool canMove=true;
+    private bool canJump=true;
 
     [Header("Collision Details")]
     [SerializeField] private float GroundCheckDistance;
@@ -24,9 +26,15 @@ public class Player : MonoBehaviour
     private void Update()
     {
         HandleCollision();
-        PlayerMovement();
+        HandleInput();
+        HandleMovemnet();
         HandleAnimation();
         FlipHandle();
+    }
+    public void EnableJumpAndMovemnet(bool enable)
+    {
+        canMove = enable;
+        canJump = enable;
     }
     private void HandleAnimation()
     {
@@ -35,17 +43,42 @@ public class Player : MonoBehaviour
         animator.SetFloat("YVelocity", rb.linearVelocity.y);
     }
 
-    private void PlayerMovement()
+    private void HandleInput()
     {
         //Horizontal movement
         MoveInputX = Input.GetAxisRaw("Horizontal");
-        rb.linearVelocity = new Vector2(MoveInputX * MoveSpeed, rb.linearVelocity.y);
+      
 
         //Jumping mechanics
 
-        if (Input.GetKeyDown(KeyCode.Space)&& IsGrounded)
-            rb.linearVelocity = new Vector2(rb.linearVelocity.x, JumpForce);
+        if (Input.GetKeyDown(KeyCode.Space))
+            TryToJump();
 
+
+        if (Input.GetKeyDown(KeyCode.Mouse0))
+           TryToAttack();
+    }
+    private void HandleMovemnet ()
+    {
+        if (canMove == true)
+            rb.linearVelocity = new Vector2(MoveInputX * MoveSpeed, rb.linearVelocity.y);
+        else
+            rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
+
+    }
+    private void TryToJump()
+    {
+        if (IsGrounded && canJump)
+        {
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x, JumpForce);
+        }
+    }
+    private void TryToAttack()
+    {
+        if(IsGrounded)
+        {
+            animator.SetTrigger("Attack");
+        }
     }
     //Points
     /*Raycast is a powerful tool in Unity that allows you to check for collisions and interactions in a specific direction.
