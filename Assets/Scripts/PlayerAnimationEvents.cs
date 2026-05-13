@@ -7,6 +7,7 @@ public class PlayerAnimationEvents : MonoBehaviour
     {
         player = GetComponentInParent<Player>();
     }
+    public void DamageEnemies() => player.DamageEnemies();
         //Call method from Player script to Stop the player movement while attacking.
     private void DisableJumpAndMovemnet() => player.EnableJumpAndMovemnet(false);
     

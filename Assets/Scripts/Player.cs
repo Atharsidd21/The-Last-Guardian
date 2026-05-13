@@ -1,11 +1,21 @@
 using System;
+using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
 
 public class Player : MonoBehaviour
 {
     private Rigidbody2D rb;
+//Can only have fixed size.
+//Cannot add or remove colliders from this array at runtime, 
+//as its size is determined at compile time. 
+//Faster than List but less flexible.
+    [Header("Animation Details")]
+    [SerializeField] private float attackRadius;
+    [SerializeField] private Transform attackPoint;
+    [SerializeField] private LayerMask WhatIsenemy;
     private Animator animator;
+   
     [Header("Movement Details")]
     [SerializeField]private bool FacingRight=true;
     [SerializeField ]private float MoveSpeed=3f;
@@ -30,6 +40,15 @@ public class Player : MonoBehaviour
         HandleMovemnet();
         HandleAnimation();
         FlipHandle();
+    }
+    public void DamageEnemies()
+    {
+       Collider2D[] enmeyColliders = Physics2D.OverlapCircleAll(attackPoint.position, attackRadius, WhatIsenemy);
+
+       foreach(Collider2D enemy in enmeyColliders)
+       {
+          enemy.GetComponent<Enemy>().TakeDamage();
+       }
     }
     public void EnableJumpAndMovemnet(bool enable)
     {
@@ -80,6 +99,7 @@ public class Player : MonoBehaviour
             animator.SetTrigger("Attack");
         }
     }
+   
     //Points
     /*Raycast is a powerful tool in Unity that allows you to check for collisions and interactions in a specific direction.
     In this case, we use it to check if the player is grounded by casting a ray downwards from the player's position.
@@ -115,5 +135,6 @@ public class Player : MonoBehaviour
     private void OnDrawGizmos()
     {
         Gizmos.DrawLine(transform.position, transform.position +new Vector3(0f, -GroundCheckDistance, 0f));
+        Gizmos.DrawWireSphere(attackPoint.position, attackRadius);    
     }
 }
