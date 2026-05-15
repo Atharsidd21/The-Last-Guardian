@@ -2,48 +2,35 @@ using UnityEngine;
 
 public class Enemy : MonoBehaviour
 {
-   private SpriteRenderer SR;
-    // Time before the enemy is destroyed after taking damage.
-   [SerializeField] private float ColorDuration = 0.5f;
-   public float currentTimeinGame;
-   public float LastTimeDamaged;
-   private void Awake()
-   {
-      SR = GetComponent<SpriteRenderer>();
-   }
+    [SerializeField] protected string EnemyName;
+   [SerializeField] protected float moveSpeed;
+
     public void Update()
     {
-        ChangeColorIfNeeded();
+       // MoveAround();
 
+        if(Input.GetKeyDown(KeyCode.F))
+        Attack();
     }
-
-    private void ChangeColorIfNeeded()
+      /*Protected method is used to define common behavior for all enemy types, 
+       while allowing derived classes to add their own specific behavior.*/
+      //Protected method can be accessed by derived classes, but not from outside the class hierarchy.
+    protected void MoveAround()
     {
-        currentTimeinGame += Time.time;
-        if (currentTimeinGame > LastTimeDamaged + ColorDuration)
-        {
-            if (SR.color != Color.black)
-            {
-                TurnBlack();
-            }
-        }
+        Debug.Log(EnemyName  +  "moves at speed"  +  moveSpeed);
+    } 
+    //Protected virtual method allows derived classes to override the Attack method
+    //  to provide specific behavior for different enemy types.
+    protected virtual void Attack()
+    {
+        Debug.Log(EnemyName  +  "attacks!");
     }
-
-    [ContextMenu("Update Timer")]
-    //private void  UpdateTimer()=> Timer = ColorDuration;
-   
-    public void TakeDamage()
-   {
-      // Implement damage logic here (e.g., reduce health, play hit animation, etc.)
-      Debug.Log(gameObject + "took some damage!");
-      // Destroy(gameObject, DestructTime); // For demonstration, we destroy the enemy immediately.
-      SR.color = Color.white; // Change color to red to indicate damage (for demonstration).
-      LastTimeDamaged = Time.time;
-   }
-
-   private void TurnBlack()
-   {
-      SR.color = Color.black; // Reset color to white (for demonstration).
-   }
-
+     public void TakeDamage()
+    {
+        
+    }
+     public string GetEnemyName()
+    {
+         return EnemyName;
+     }
 }
