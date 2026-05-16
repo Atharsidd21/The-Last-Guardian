@@ -25,10 +25,7 @@ public class Enemy : MonoBehaviour
     {
         Debug.Log(EnemyName  +  "attacks!");
     }
-     public void TakeDamage()
-    {
-        
-    }
+    
      public string GetEnemyName()
     {
          return EnemyName;
