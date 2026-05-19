@@ -1,39 +1,54 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
 
-public class Player : MonoBehaviour
+public class Entity : MonoBehaviour
 {
-    private Rigidbody2D rb;
+    protected Rigidbody2D rb;
+    protected Collider2D col;
+    protected SpriteRenderer sprite;
+    protected Animator anim;
+    [Header("Health Details")]
+    [SerializeField] private Material damageMaterial;
+    [SerializeField] private int maxHealth = 1;
+    [SerializeField] private int currentHealth;
+    [SerializeField] private float damageFlashDuration = 0.2f;
+    //To Store multiple coutines and stop them when needed.
+    // Can run multiple couroutines at the same time!!
+    private Coroutine damageFlashCoroutine;
     //Can only have fixed size.
     //Cannot add or remove colliders from this array at runtime, 
     //as its size is determined at compile time. 
     //Faster than List but less flexible.
     [Header("Attack Details")]
-    [SerializeField] private float attackRadius;
-    [SerializeField] private Transform attackPoint;
-    [SerializeField] private LayerMask WhatIsenemy;
-    private Animator animator;
+    [SerializeField] protected float attackRadius;
+    [SerializeField] protected Transform attackPoint;
+    [SerializeField] protected LayerMask WhatIsTarget;
 
     [Header("Movement Details")]
-    [SerializeField] private bool FacingRight = true;
-    [SerializeField] private float MoveSpeed = 3f;
+    [SerializeField] protected bool FacingRight = true;
+    protected int FacingDir = 1;
+    [SerializeField] protected float MoveSpeed = 3f;
     [SerializeField] private float JumpForce = 5f;
     private float MoveInputX;
-    private bool canMove = true;
+    protected bool canMove = true;
     private bool canJump = true;
 
     [Header("Collision Details")]
     [SerializeField] private float GroundCheckDistance;
-    private bool IsGrounded;
+    protected bool IsGrounded;
     [SerializeField] private LayerMask GroundLayer;
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
-        animator = GetComponentInChildren<Animator>();
+        anim = GetComponentInChildren<Animator>();
+        col = GetComponent<Collider2D>();
+        sprite = GetComponentInChildren<SpriteRenderer>();
+        currentHealth = maxHealth;
     }
-    private void Update()
+    protected virtual void Update()
     {
         HandleCollision();
         HandleInput();
@@ -41,30 +56,64 @@ public class Player : MonoBehaviour
         HandleAnimation();
         FlipHandle();
     }
-    public void DamageEnemies()
+    public void DamageTargets()
     {
-        Collider2D[] enmeyColliders = Physics2D.OverlapCircleAll(attackPoint.position, attackRadius, WhatIsenemy);
+        Collider2D[] enmeyColliders = Physics2D.OverlapCircleAll(attackPoint.position, attackRadius, WhatIsTarget);
 
         foreach (Collider2D enemy in enmeyColliders)
         {
-           Enemy enemyScript = enemy.GetComponent<Enemy>();
-            enemyScript.TakeDamage();
-            string enemyName = enemyScript.GetEnemyName();
-            Debug.Log("damaged enmey:"+ enemyName);
+            Entity entityTarget = enemy.GetComponent<Entity>();
+            entityTarget.TakeDamage();
+
 
         }
-     
+
     }
+
+    protected virtual void TakeDamage()
+    {
+        currentHealth = currentHealth - 1;
+        PlayDamageFeedback();
+        if (currentHealth <= 0)
+        {
+            Die();
+        }
+    }
+
+    private void PlayDamageFeedback()
+    {
+        if (damageFlashCoroutine != null)
+            StopCoroutine(damageFlashCoroutine);
+        
+        damageFlashCoroutine = StartCoroutine(DamageFlash());
+    }
+
+    private IEnumerator DamageFlash()
+    {
+       Material originalMat =sprite.material;
+       sprite.material = damageMaterial;
+       yield return new WaitForSeconds(damageFlashDuration);
+       sprite.material = originalMat;
+    }
+    protected virtual void Die()
+    {
+        anim.enabled = false;
+        col.enabled = false;
+        rb.gravityScale = 12f;
+        rb.linearVelocity = new Vector2(rb.linearVelocity.x, 15);
+
+    }
+
     public void EnableJumpAndMovemnet(bool enable)
     {
         canMove = enable;
         canJump = enable;
     }
-    private void HandleAnimation()
+    protected virtual void HandleAnimation()
     {
-        animator.SetFloat("XVelocity", rb.linearVelocity.x);
-        animator.SetBool("IsGrounded", IsGrounded);
-        animator.SetFloat("YVelocity", rb.linearVelocity.y);
+        anim.SetFloat("XVelocity", rb.linearVelocity.x);
+        anim.SetFloat("YVelocity", rb.linearVelocity.y);
+        anim.SetBool("IsGrounded", IsGrounded);
     }
 
     private void HandleInput()
@@ -80,9 +129,9 @@ public class Player : MonoBehaviour
 
 
         if (Input.GetKeyDown(KeyCode.Mouse0))
-            TryToAttack();
+            HandleAttack();
     }
-    private void HandleMovemnet()
+    protected virtual void HandleMovemnet()
     {
         if (canMove == true)
             rb.linearVelocity = new Vector2(MoveInputX * MoveSpeed, rb.linearVelocity.y);
@@ -97,11 +146,11 @@ public class Player : MonoBehaviour
             rb.linearVelocity = new Vector2(rb.linearVelocity.x, JumpForce);
         }
     }
-    private void TryToAttack()
+    protected virtual void HandleAttack()
     {
         if (IsGrounded)
         {
-            animator.SetTrigger("Attack");
+            anim.SetTrigger("Attack");
         }
     }
 
@@ -113,21 +162,22 @@ public class Player : MonoBehaviour
     This method is crucial for implementing jumping mechanics,
     as it ensures that the player can only jump when they are on the ground, preventing mid-air jumps and
     adding realism to the gameplay.*/
-    private void HandleCollision()
+    protected virtual void HandleCollision()
     {
         IsGrounded = Physics2D.Raycast(transform.position, Vector2.down, GroundCheckDistance, GroundLayer);
     }
-    private void FlipHandle()
+    protected virtual void FlipHandle()
     {
         if (rb.linearVelocity.x > 0 && FacingRight == false)
             PlayerFlip();
         else if (rb.linearVelocity.x < 0 && FacingRight == true)
             PlayerFlip();
     }
-    private void PlayerFlip()
+    protected virtual void PlayerFlip()
     {
         transform.Rotate(0f, 180f, 0f);
         FacingRight = !FacingRight;
+        FacingDir = FacingDir * -1;
     }
     //Gizmos to show the ground check distance
     /*This will help us visualize the distance at which the player checks for the ground,
